@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+uploads/
+.DS_Store
+.vscode
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+build-exe/
+build-ghost/
+build/
+*.log
+*.tsbuildinfo
+*.env

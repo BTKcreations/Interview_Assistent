@@ -1,0 +1,81 @@
+{
+  "name": "interview-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stealth AI Interview Assistant - Pro Standalone Bundle",
+  "main": "src/electron/main.js",
+  "scripts": {
+    "serve": "vite",
+    "backend": "tsx src/backend/server.ts",
+    "electron": "wait-on http://localhost:5173 && electron .",
+    "dev": "concurrently \"npm:serve\" \"npm:backend\" \"npm:electron\"",
+    "build": "vite build",
+    "build:backend": "esbuild src/backend/server.ts --bundle --platform=node --outfile=src/backend/server.js --external:electron --external:pdf-parse --external:ws --external:express --external:multer --external:cors",
+    "dist:exe": "npm run build && npm run build:backend && electron-builder",
+    "test": "vitest run"
+  },
+  "build": {
+    "appId": "com.ghost.assistant",
+    "productName": "Ghost Interview Assistant",
+    "directories": {
+      "output": "build-ghost"
+    },
+    "files": [
+      "dist/**/*",
+      "src/electron/**/*",
+      "src/backend/server.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true
+    },
+    "asar": true,
+    "asarUnpack": [
+      "src/backend/server.js",
+      "node_modules/pdf-parse/**/*"
+    ]
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.3",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.9.0",
+    "pdf-parse": "^1.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.18",
+    "@types/multer": "^1.4.9",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.5.6",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.2.1",
+    "electron": "^26.0.0",
+    "electron-builder": "^24.6.4",
+    "esbuild": "^0.19.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.2",
+    "vitest": "^4.1.5",
+    "wait-on": "^7.0.1"
+  }
+}
