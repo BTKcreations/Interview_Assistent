@@ -1,4 +1,4 @@
-import { createEmbedding, hasEmbeddingProvider } from './openaiClient'
+import { createEmbedding, hasEmbeddingProvider, createLocalEmbedding } from './openaiClient'
 
 type ResumeChunk = {
   id: string
@@ -70,7 +70,7 @@ export async function ingestResumeText(text: string, fileName = 'manual_entry.tx
   for (const chunkText of chunks) {
     const embedding = hasEmbeddingProvider()
       ? await createEmbedding(chunkText)
-      : generateLocalEmbedding(chunkText)
+      : createLocalEmbedding(chunkText)
 
     resumeChunks.push({
       id: createId(),
@@ -96,7 +96,7 @@ export async function retrieveResumeContext(question: string) {
     return 'No knowledge context is available yet. Upload documents or paste your resume to enable personalized responses.'
   }
 
-  const queryEmbedding = hasEmbeddingProvider() ? await createEmbedding(question) : generateLocalEmbedding(question)
+  const queryEmbedding = hasEmbeddingProvider() ? await createEmbedding(question) : createLocalEmbedding(question)
 
   const scored = resumeChunks
     .map((chunk) => ({
@@ -118,35 +118,6 @@ export function hasResumeContext() {
 export function resetResumeStore() {
   resumeChunks.length = 0
   documents.length = 0
-}
-
-// Utility functions (tokenize, generateLocalEmbedding, cosineSimilarity, normalizeText)
-function normalizeText(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function tokenize(text: string) {
-  return normalizeText(text).split(' ').filter(Boolean)
-}
-
-function generateLocalEmbedding(text: string) {
-  const tokens = tokenize(text)
-  const counts = new Map<string, number>()
-  for (const token of tokens) {
-    counts.set(token, (counts.get(token) ?? 0) + 1)
-  }
-  const vector: number[] = []
-  const sortedTokens = Array.from(counts.keys()).sort()
-  for (const token of sortedTokens) {
-    vector.push(counts.get(token) ?? 0)
-  }
-  const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0))
-  if (magnitude === 0) return vector
-  return vector.map((value) => value / magnitude)
 }
 
 function cosineSimilarity(a: number[], b: number[]) {

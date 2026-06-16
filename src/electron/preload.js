@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowMoveEnd: () => ipcRenderer.send('window-move-end'),
   captureScreen: () => ipcRenderer.invoke('capture-screen'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  resizeWindow: (height) => ipcRenderer.send('resize-window', height),
   onShortcutToggleMic: (callback) => {
     const subscription = (_event) => callback()
     ipcRenderer.on('shortcut-toggle-mic', subscription)

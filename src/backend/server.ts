@@ -27,6 +27,16 @@ app.delete('/documents/:id', (req: Request, res: Response) => {
   res.json({ success })
 })
 
+app.get('/documents', async (_req: Request, res: Response) => {
+  try {
+    const docs = await listDocuments()
+    res.json(docs)
+  } catch (error) {
+    console.error('Fetch documents error:', error)
+    res.status(500).json({ status: 'error', message: 'Could not fetch documents.' })
+  }
+})
+
 app.get('/storage-stats', (_req: Request, res: Response) => {
   res.json(getStorageStats())
 })
@@ -141,10 +151,12 @@ wss.on('connection', (socket) => {
       return sendJson(socket, { type: 'status', text: 'Backend is ready for interview streaming.' })
     }
 
-    if (event.type === 'ask-question') {
-      const question = typeof event.question === 'string' ? event.question : ''
-      
-      // INTERRUPT: Kill existing response if any
+    const askQuestion = async (questionText: string) => {
+      const question = typeof questionText === 'string' ? questionText.trim() : ''
+      if (!question) {
+        return sendJson(socket, { type: 'error', message: 'Question text must be provided.' })
+      }
+
       const wsSocket = socket as any as WebSocket
       if (activeStreams.has(wsSocket)) {
         activeStreams.get(wsSocket)?.abort()
@@ -172,6 +184,10 @@ wss.on('connection', (socket) => {
           sendJson(socket, { type: 'assistant-end', text: 'Response complete.' })
         }
       )
+    }
+
+    if (event.type === 'ask-question') {
+      await askQuestion(event.question)
       return
     }
 
@@ -179,12 +195,11 @@ wss.on('connection', (socket) => {
       const audioBase64 = typeof event.audio === 'string' ? event.audio : ''
       if (!audioBase64) return
       const audioBuffer = Buffer.from(audioBase64, 'base64')
-      
-      transcribeAudio(audioBuffer).then(text => {
+
+      transcribeAudio(audioBuffer).then(async (text) => {
         if (text && text.trim().length > 10) {
           sendJson(socket, { type: 'stt-result', text })
 
-          // AUTO-DETECT: Does this sound like a question for the candidate?
           const questionPatterns = [
             'tell me about', 'what is your', 'how would you', 'can you explain',
             'describe a', 'experience with', 'why should we', 'your background',
@@ -196,9 +211,8 @@ wss.on('connection', (socket) => {
           const isInterviewQuestion = questionPatterns.some(p => lowerText.includes(p)) || text.includes('?')
 
           if (isInterviewQuestion) {
-            console.log('🚀 [SmartMic] AUTO-TRIGGER: Detected interview question!')
-            // Call the ask-question logic manually
-            socket.emit('message', JSON.stringify({ type: 'ask-question', question: text }))
+            console.log('🚀 [SmartMic] Detected interview question, waiting for confirmation.')
+            sendJson(socket, { type: 'detected-question', text })
           }
         }
       }).catch(err => console.error('STT Error:', err))
@@ -271,11 +285,6 @@ wss.on('connection', (socket) => {
       } catch (error) {
         return sendJson(socket, { type: 'stt-error', text: `STT failed: ${(error as Error).message}` })
       }
-    }
-
-    if (event.type === 'stt-start') {
-      // (Deepgram logic preserved here)
-      // ... 
     }
 
     if (event.type === 'stt-stop') {

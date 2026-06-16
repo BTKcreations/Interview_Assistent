@@ -2,6 +2,7 @@ node_modules
 dist
 .env
 uploads/
+src/backend/server.js
 .DS_Store
 .vscode
 npm-debug.log

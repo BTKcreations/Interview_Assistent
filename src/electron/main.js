@@ -9,12 +9,50 @@ let backendProcess
 // REQUIRED FOR TRANSPARENCY ON SOME WINDOWS MACHINES
 app.disableHardwareAcceleration()
 
-function startBackend() {
-  if (isDev) return // Let concurrently handle backend in dev
+function logToFile(msg) {
+  const fs = require('fs')
+  const logPath = path.join(app.getPath('userData'), 'ghost-debug.log')
+  fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`)
+}
 
-  const serverPath = path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'src/backend/server.js')
-  backendProcess = fork(serverPath)
-  backendProcess.on('error', (err) => console.error('Backend failed to start:', err))
+function startBackend() {
+  if (isDev) return
+
+  const appPath = app.getAppPath().replace('app.asar', 'app.asar.unpacked')
+  const serverPath = path.join(appPath, 'src', 'backend', 'server.js')
+  const envPath = path.join(appPath, '.env')
+
+  logToFile(`app.getAppPath() = ${app.getAppPath()}`)
+  logToFile(`appPath = ${appPath}`)
+  logToFile(`serverPath = ${serverPath}`)
+  logToFile(`envPath = ${envPath}`)
+  logToFile(`fs.existsSync(serverPath) = ${require('fs').existsSync(serverPath)}`)
+  logToFile(`fs.existsSync(envPath) = ${require('fs').existsSync(envPath)}`)
+  logToFile(`userData = ${app.getPath('userData')}`)
+
+  backendProcess = fork(serverPath, [], {
+    silent: true,
+    cwd: appPath,
+    env: { ...process.env, DOTENV_CONFIG_PATH: envPath }
+  })
+  backendProcess.stdout?.on('data', (data) => {
+    const msg = data.toString().trim()
+    console.log('[backend]', msg)
+    logToFile(`[stdout] ${msg}`)
+  })
+  backendProcess.stderr?.on('data', (data) => {
+    const msg = data.toString().trim()
+    console.error('[backend]', msg)
+    logToFile(`[stderr] ${msg}`)
+  })
+  backendProcess.on('error', (err) => {
+    console.error('[electron] Backend failed to start:', err)
+    logToFile(`[error] ${err.message}`)
+  })
+  backendProcess.on('exit', (code) => {
+    console.log('[electron] Backend exited with code:', code)
+    logToFile(`[exit] code=${code}`)
+  })
 }
 
 // Force enable speech recognition flags
@@ -25,9 +63,9 @@ function createWindow() {
   const { width: screenW } = screen.getPrimaryDisplay().workAreaSize
 
   mainWindow = new BrowserWindow({
-    width: Math.min(screenW, 1100),
-    height: 520,
-    x: Math.max(0, Math.floor((screenW - Math.min(screenW, 1100)) / 2)),
+    width: Math.min(screenW, 800),
+    height: 500,
+    x: Math.max(0, Math.floor((screenW - Math.min(screenW, 800)) / 2)),
     y: 0,
     transparent: true,
     frame: false,
@@ -88,8 +126,10 @@ function setWindowCaptureProtection(enabled) {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   startBackend()
+  // Give backend a moment to bind port, then create window
+  await new Promise(r => setTimeout(r, 1500))
   createWindow()
 
   // Register Global Shortcuts for Stealth Mode
@@ -166,6 +206,18 @@ ipcMain.on('window-move', () => {
 
 ipcMain.on('window-move-end', () => {
   if (mainWindow) mainWindow._dragOffset = null
+})
+
+ipcMain.on('resize-window', (event, height) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const { height: screenH } = screen.getPrimaryDisplay().workAreaSize
+  const maxHeight = Math.floor(screenH * 0.9)
+  const minHeight = 180
+  const newHeight = Math.max(minHeight, Math.min(maxHeight, Math.ceil(height)))
+  const [, currentH] = mainWindow.getSize()
+  if (Math.abs(currentH - newHeight) > 4) {
+    mainWindow.setSize(mainWindow.getSize()[0], newHeight)
+  }
 })
 
 ipcMain.handle('open-external', async (event, url) => {

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1C2333"/>
+      <stop offset="100%" stop-color="#0B0F19"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="256" y1="180" x2="256" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  
+  <!-- Subtle glow -->
+  <circle cx="256" cy="260" r="160" fill="url(#glow)"/>
+  
+  <!-- Speech bubble -->
+  <path d="M128 160 C128 138 146 120 168 120 L344 120 C366 120 384 138 384 160 L384 280 C384 302 366 320 344 320 L220 320 L172 368 L172 320 L168 320 C146 320 128 302 128 280 Z" fill="url(#accent)" opacity="0.9"/>
+  
+  <!-- Person icon inside bubble -->
+  <circle cx="256" cy="210" r="28" fill="#0B0F19" opacity="0.8"/>
+  <path d="M208 280 C208 252 228 236 256 236 C284 236 304 252 304 280 L304 280 C304 292 294 302 282 302 L230 302 C218 302 208 292 208 280 Z" fill="#0B0F19" opacity="0.8"/>
+  
+  <!-- Small dots (AI signal) -->
+  <circle cx="340" cy="200" r="6" fill="#C4B5FD" opacity="0.7"/>
+  <circle cx="356" cy="216" r="4" fill="#C4B5FD" opacity="0.5"/>
+  <circle cx="348" cy="232" r="3" fill="#C4B5FD" opacity="0.3"/>
+  
+  <!-- Microphone hint -->
+  <rect x="244" y="340" width="24" height="32" rx="12" fill="#C4B5FD" opacity="0.6"/>
+  <path d="M232 356 C232 372 242 384 256 384 C270 384 280 372 280 356" stroke="#C4B5FD" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="384" x2="256" y2="400" stroke="#C4B5FD" stroke-width="3" opacity="0.6" stroke-linecap="round"/>
+</svg>

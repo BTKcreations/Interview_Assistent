@@ -110,7 +110,7 @@ export function hasEmbeddingProvider() {
   return useHuggingFaceEmbeddings() || useOllamaEmbeddings() || hasOpenAIKey()
 }
 
-function createLocalEmbedding(text: string) {
+export function createLocalEmbedding(text: string) {
   const normalized = text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
