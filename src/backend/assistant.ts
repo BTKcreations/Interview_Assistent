@@ -1,5 +1,5 @@
 import { ingestResumeText as storeResumeText, retrieveResumeContext as fetchResumeContext, hasResumeContext } from './vectorStore'
-import { hasOpenAIKey, useOllama, streamChatCompletion, streamVisionCompletion } from './openaiClient'
+import { hasGroqKey, hasGoogleAIKey, useOllama, hasOpenAIKey, streamChatCompletion, streamVisionCompletion } from './openaiClient'
 
 export async function ingestResumeText(text: string, name?: string, size?: number) {
   return storeResumeText(text, name, size)
@@ -40,7 +40,7 @@ ${visionContext}` : ''}
 • [Key Achievement/Point 2]
 • [Conclusion/Call to Action]
 
-**💡 Pro-Tip:** [Strategic coaching advice]`;
+**Pro-Tip:** [Strategic coaching advice]`;
 }
 
 export async function streamAssistantResponse(
@@ -48,26 +48,27 @@ export async function streamAssistantResponse(
   onChunk: (chunk: string) => void,
   onComplete: () => void
 ) {
-  if (hasOpenAIKey() || useOllama()) {
+  // At least one free provider should be available
+  if (hasGroqKey() || hasGoogleAIKey() || useOllama() || hasOpenAIKey()) {
     try {
       await streamChatCompletion(
         prompt,
         onChunk,
         onComplete,
         (error) => {
-          onChunk(`\n[Assistant fallback after streaming error: ${error.message}]\n`)
+          onChunk(`\n[Assistant error: ${error.message}]\n`)
           onComplete()
         }
       )
       return
     } catch (error) {
-      onChunk(`\n[Assistant fallback after error: ${String(error)}]\n`)
+      onChunk(`\n[Assistant error: ${String(error)}]\n`)
     }
   }
 
-  const response = `This is a simulated real-time response for the prompt: ${prompt.slice(0, 200)}...` 
-    + `\n\nFocus on the user's experience, mention resume context, and keep the answer clear.`
-
+  // No providers configured - show helpful message
+  console.warn('[Assistant] No AI providers configured. Check AGENTS.md for free provider setup.')
+  const response = `No AI provider is configured. Please set up a free provider in your .env file.\n\nSee AGENTS.md for instructions:\n- Groq (fastest): console.groq.com\n- Google Gemini (smartest): aistudio.google.com\n- Ollama (local unlimited): ollama.com`
   const chunks = response.split(/(\s+)/).filter(Boolean)
   let index = 0
 
@@ -94,7 +95,7 @@ export async function streamVisionAssistantResponse(
   onChunk: (chunk: string) => void,
   onComplete: () => void
 ) {
-  if (hasOpenAIKey() || useOllama()) {
+  if (useOllama() || hasOpenAIKey()) {
     try {
       await streamVisionCompletion(
         prompt,
@@ -108,11 +109,11 @@ export async function streamVisionAssistantResponse(
       )
       return
     } catch (error) {
-      onChunk(`\n[Vision fallback error: ${String(error)}]\n`)
+      onChunk(`\n[Vision error: ${String(error)}]\n`)
       onComplete()
     }
   } else {
-    onChunk('\n[Vision features require an OpenAI API key or a local vision model in Ollama (e.g., llava).]\n')
+    onChunk('\n[Vision requires Ollama with LLaVA model (free) or an OpenAI key (paid).]\n')
     onComplete()
   }
 }
